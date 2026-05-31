@@ -48,7 +48,7 @@ export async function handleCommand(command, input = {}, settings = {}, request 
 
 async function panelData(input, settings, dataDir) {
   const version = await commandAvailable(settings.repovistaCommand);
-  if (!input.repoPath && !settings.defaultRepoPath && !input.githubRepo) {
+  if (!input.repoPath && !settings.defaultRepoPath && !hasGithubSource(input)) {
     return ok({
       version,
       configured: Boolean(version),
@@ -112,7 +112,7 @@ async function runRepoVistaCommand(command, input, settings, dataDir) {
 }
 
 async function resolveExecutionCwd(input, settings, dataDir) {
-  if (String(input.githubRepo || "").trim()) {
+  if (hasGithubSource(input)) {
     if (!settings.allowGithubSource) {
       throw new Error("GitHub source scans are disabled for this plugin.");
     }
@@ -123,11 +123,17 @@ async function resolveExecutionCwd(input, settings, dataDir) {
 }
 
 async function resolveReportRoot(input, settings, dataDir) {
-  if (String(input.githubRepo || "").trim()) {
+  if (hasGithubSource(input)) {
     await mkdir(dataDir, { recursive: true });
     return realpath(dataDir);
   }
   return resolveRepoPath(input, settings);
+}
+
+function hasGithubSource(input) {
+  const mode = String(input.sourceMode || "").toLowerCase();
+  if (mode === "local") return false;
+  return mode === "github" || Boolean(String(input.githubRepo || "").trim());
 }
 
 async function diagnostics(settings, dataDir) {

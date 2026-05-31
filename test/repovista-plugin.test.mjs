@@ -32,6 +32,7 @@ test("buildAuditArgs maps scan options to RepoVista CLI flags", () => {
 
 test("buildAuditArgs maps GitHub source scan options", () => {
   const args = buildAuditArgs({
+    sourceMode: "github",
     githubRepo: "nordbyte/RepoVista",
     githubRef: "main",
     provider: "codex"
@@ -44,6 +45,18 @@ test("buildAuditArgs maps GitHub source scan options", () => {
   assert.equal(args.includes("main"), true);
 });
 
+test("buildAuditArgs ignores stale GitHub fields in local source mode", () => {
+  const args = buildAuditArgs({
+    sourceMode: "local",
+    repoPath: "/repo",
+    githubRepo: "nordbyte/RepoVista",
+    githubRef: "main"
+  }, normalizeSettings({ allowGithubSource: true }));
+
+  assert.equal(args.includes("--github-repo"), false);
+  assert.equal(args.includes("--github-ref"), false);
+});
+
 test("scan panel uses shared comparison header spacing classes", () => {
   const html = renderPanel({}, { runtime: { name: "Local node", workspace: "/repo" } }, {});
 
@@ -52,7 +65,18 @@ test("scan panel uses shared comparison header spacing classes", () => {
   assert.match(html, /<summary>Advanced options<\/summary>/);
   assert.match(html, /<select name="phases" multiple size="4">/);
   assert.match(html, /<select name="exportFormats" multiple size="4">/);
-  assert.match(html, /GitHub repo/);
+  assert.match(html, /<select name="sourceMode">/);
+  assert.match(html, /Local repository path/);
+  assert.match(html, /data-source-section="github" hidden/);
+});
+
+test("scan panel shows GitHub source fields only when GitHub mode is selected", () => {
+  const html = renderPanel({ sourceMode: "github", githubRepo: "nordbyte/RepoVista" }, { runtime: { name: "Local node" } }, {});
+
+  assert.match(html, /<option value="github" selected>GitHub repository<\/option>/);
+  assert.match(html, /data-source-section="local" hidden/);
+  assert.match(html, /data-source-section="github"/);
+  assert.doesNotMatch(html, /data-source-section="github" hidden/);
 });
 
 test("resolveRepoPath respects allowed roots", async () => {

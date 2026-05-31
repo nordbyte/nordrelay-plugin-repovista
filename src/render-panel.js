@@ -67,9 +67,14 @@ export function panelScript() {
   function qa(sel){return Array.prototype.slice.call(root.querySelectorAll(sel))}
   function value(name){var el=q('[name="'+name+'"]');if(!el)return undefined;if(el.type==='checkbox')return el.checked;if(el.multiple)return Array.prototype.slice.call(el.selectedOptions).map(function(o){return o.value});return el.value}
   function payload(extra){
-    var data={repoPath:value('repoPath'),outDir:value('outDir'),provider:value('provider'),model:value('model'),profile:value('profile'),reasoning:value('reasoning'),sandbox:value('sandbox'),parallel:value('parallel'),auditProfile:value('auditProfile'),reviewMode:value('reviewMode'),language:value('language'),githubRepo:value('githubRepo'),githubRef:value('githubRef'),since:value('since'),baseRef:value('baseRef'),workspace:value('workspace'),includes:value('includes'),ignores:value('ignores'),phases:value('phases'),exportFormats:value('exportFormats'),checkCommands:value('checkCommands'),runChecks:value('runChecks'),strictReports:value('strictReports'),repairReports:value('repairReports'),deepReview:value('deepReview'),snapshot:value('snapshot'),failOnDrift:value('failOnDrift'),failOnWeakEvidence:value('failOnWeakEvidence'),fastMode:value('fastMode'),keepLogs:value('keepLogs'),json:value('json')};
+    var sourceMode=value('sourceMode')||'local';
+    var data={sourceMode:sourceMode,repoPath:sourceMode==='local'?value('repoPath'):undefined,outDir:value('outDir'),provider:value('provider'),model:value('model'),profile:value('profile'),reasoning:value('reasoning'),sandbox:value('sandbox'),parallel:value('parallel'),auditProfile:value('auditProfile'),reviewMode:value('reviewMode'),language:value('language'),githubRepo:sourceMode==='github'?value('githubRepo'):undefined,githubRef:sourceMode==='github'?value('githubRef'):undefined,since:value('since'),baseRef:value('baseRef'),workspace:value('workspace'),includes:value('includes'),ignores:value('ignores'),phases:value('phases'),exportFormats:value('exportFormats'),checkCommands:value('checkCommands'),runChecks:value('runChecks'),strictReports:value('strictReports'),repairReports:value('repairReports'),deepReview:value('deepReview'),snapshot:value('snapshot'),failOnDrift:value('failOnDrift'),failOnWeakEvidence:value('failOnWeakEvidence'),fastMode:value('fastMode'),keepLogs:value('keepLogs'),json:value('json')};
     Object.keys(data).forEach(function(key){if(data[key]===''||data[key]===undefined)data[key]=undefined});
     return Object.assign(data,extra||{});
+  }
+  function updateSourceMode(){
+    var mode=value('sourceMode')||'local';
+    qa('[data-source-section]').forEach(function(el){el.hidden=el.dataset.sourceSection!==mode;});
   }
   function reload(extra){if(api&&api.reload)return api.reload(payload(extra||{tab:root.dataset.tab||'scan'}));}
   function showOutput(title,body){
@@ -78,6 +83,7 @@ export function panelScript() {
   }
   function escapeHtml(v){return String(v==null?'':v).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',\"'\":'&#39;'}[ch]})}
   qa('[data-tab-id]').forEach(function(button){button.addEventListener('click',function(){root.dataset.tab=button.dataset.tabId;qa('[data-tab-id]').forEach(function(b){var active=b===button;b.classList.toggle('active',active);b.setAttribute('aria-selected',active?'true':'false')});qa('[data-tab-panel]').forEach(function(panel){panel.hidden=panel.dataset.tabPanel!==button.dataset.tabId});reload({tab:button.dataset.tabId});});});
+  var sourceMode=q('[name="sourceMode"]');if(sourceMode){sourceMode.addEventListener('change',updateSourceMode);updateSourceMode();}
   var reloadButton=q('[data-repovista-reload]');if(reloadButton)reloadButton.addEventListener('click',function(){reload({tab:root.dataset.tab||'scan'});});
   var scanButton=q('[data-scan-start]');if(scanButton)scanButton.addEventListener('click',async function(){scanButton.disabled=true;try{var job=await api.jobs.start('scan',payload({tab:'jobs'}));api.toast&&api.toast('RepoVista scan started');showOutput('Scan job',job);root.dataset.tab='jobs';reload({tab:'jobs'});}catch(e){showOutput('Scan failed',e&&e.message?e.message:e);}finally{scanButton.disabled=false;}});
   qa('[data-command]').forEach(function(button){button.addEventListener('click',async function(){button.disabled=true;try{var result=await api.invokeCommand(button.dataset.command,payload(commandExtra(button)));showOutput(button.textContent.trim(),result&&result.output!==undefined?result.output:result);}catch(e){showOutput('Command failed',e&&e.message?e.message:e);}finally{button.disabled=false;}});});
@@ -88,12 +94,14 @@ export function panelScript() {
 }
 
 function renderScanForm(input, settings) {
+  const sourceMode = scanSourceMode(input, settings);
   return `<div class="stack monitor-comparison-panel repovista-scan-panel">
     <div class="section-header"><h2>Start Scan</h2><div class="row">${badge("write actions " + (settings.allowWriteActions ? "enabled" : "disabled"), settings.allowWriteActions ? "warning" : "disabled")}</div></div>
     <div class="form-grid">
-      ${field("Local repository path", "repoPath", input.repoPath, "text")}
-      ${field("GitHub repo", "githubRepo", input.githubRepo || "", "text")}
-      ${field("GitHub ref", "githubRef", input.githubRef || "", "text")}
+      ${sourceModeField(sourceMode, settings)}
+      ${field("Local repository path", "repoPath", input.repoPath, "text", ` data-source-section="local"${sourceMode === "local" ? "" : " hidden"}`)}
+      ${field("GitHub repo", "githubRepo", input.githubRepo || "", "text", ` data-source-section="github"${sourceMode === "github" ? "" : " hidden"}`)}
+      ${field("GitHub ref", "githubRef", input.githubRef || "", "text", ` data-source-section="github"${sourceMode === "github" ? "" : " hidden"}`)}
       ${selectField("Provider", "provider", PROVIDERS, input.provider)}
       ${field("Model", "model", input.model || "", "text")}
       ${field("Reasoning", "reasoning", input.reasoning, "text")}
@@ -138,6 +146,20 @@ function renderScanForm(input, settings) {
       <button type="button" class="secondary" data-command="profiles">Profiles</button>
     </div>
   </div>`;
+}
+
+function scanSourceMode(input, settings) {
+  const requested = String(input.sourceMode || "").toLowerCase();
+  if (requested === "github" && settings.allowGithubSource !== false) return "github";
+  if (String(input.githubRepo || "").trim() && settings.allowGithubSource !== false) return "github";
+  return "local";
+}
+
+function sourceModeField(value, settings) {
+  const options = settings.allowGithubSource === false
+    ? [["local", "Local repository path"]]
+    : [["local", "Local repository path"], ["github", "GitHub repository"]];
+  return `<label><span>Source</span><select name="sourceMode">${options.map(([option, label]) => `<option value="${attr(option)}"${String(option) === String(value) ? " selected" : ""}>${escapeHtml(label)}</option>`).join("")}</select></label>`;
 }
 
 function advancedScanOptionsOpen(input) {
@@ -197,8 +219,8 @@ function tabButton(id, label, active) {
   return `<button type="button" role="tab" class="${isActive ? "active" : ""}" aria-selected="${isActive ? "true" : "false"}" data-tab-id="${attr(id)}">${escapeHtml(label)}</button>`;
 }
 
-function field(label, name, value, type) {
-  return `<label><span>${escapeHtml(label)}</span><input type="${attr(type)}" name="${attr(name)}" value="${attr(value || "")}"></label>`;
+function field(label, name, value, type, labelAttrs = "") {
+  return `<label${labelAttrs}><span>${escapeHtml(label)}</span><input type="${attr(type)}" name="${attr(name)}" value="${attr(value || "")}"></label>`;
 }
 
 function selectField(label, name, options, value) {

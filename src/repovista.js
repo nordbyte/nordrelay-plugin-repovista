@@ -100,11 +100,12 @@ export async function resolveRepoPath(input = {}, settings = {}) {
 
 export function buildAuditArgs(input = {}, settings = {}) {
   const args = ["audit", "--no-progress"];
+  const sourceInput = normalizeSourceInput(input);
   const options = {
-    provider: input.provider || settings.defaultProvider,
-    outDir: input.outDir || settings.defaultOutDir,
-    reasoning: input.reasoning || settings.defaultReasoning,
-    ...input
+    provider: sourceInput.provider || settings.defaultProvider,
+    outDir: sourceInput.outDir || settings.defaultOutDir,
+    reasoning: sourceInput.reasoning || settings.defaultReasoning,
+    ...sourceInput
   };
 
   if (options.githubRepo && !settings.allowGithubSource) {
@@ -125,6 +126,17 @@ export function buildAuditArgs(input = {}, settings = {}) {
     if ((value === false || value === "false") && NEGATED_FLAGS.has(key)) args.push(`--${NEGATED_FLAGS.get(key)}`);
   }
   return args;
+}
+
+function normalizeSourceInput(input) {
+  const mode = String(input.sourceMode || "").toLowerCase();
+  if (mode === "local") {
+    return { ...input, githubRepo: undefined, githubRef: undefined };
+  }
+  if (mode === "github") {
+    return { ...input, repoPath: undefined };
+  }
+  return input;
 }
 
 export function buildCommandArgs(command, input = {}, settings = {}) {
