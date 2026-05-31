@@ -4,6 +4,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { buildAuditArgs, normalizeSettings, resolveRepoPath } from "../src/repovista.js";
+import { renderPanel } from "../src/render-panel.js";
 import { listReports, readReportDetail } from "../src/reports.js";
 
 test("buildAuditArgs maps scan options to RepoVista CLI flags", () => {
@@ -26,6 +27,13 @@ test("buildAuditArgs maps scan options to RepoVista CLI flags", () => {
   assert.equal(args.includes("--deep-review"), true);
   assert.equal(args.filter((item) => item === "--phase").length, 2);
   assert.equal(args.filter((item) => item === "--include").length, 2);
+});
+
+test("scan panel uses shared comparison header spacing classes", () => {
+  const html = renderPanel({}, { runtime: { name: "Local node", workspace: "/repo" } }, {});
+
+  assert.match(html, /class="stack monitor-comparison-panel repovista-scan-panel"/);
+  assert.match(html, /<h2>Start Scan<\/h2>/);
 });
 
 test("resolveRepoPath respects allowed roots", async () => {

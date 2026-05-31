@@ -88,7 +88,7 @@ export function panelScript() {
 }
 
 function renderScanForm(input, settings) {
-  return `<div class="stack">
+  return `<div class="stack monitor-comparison-panel repovista-scan-panel">
     <div class="section-header"><h2>Start Scan</h2><div class="row">${badge("write actions " + (settings.allowWriteActions ? "enabled" : "disabled"), settings.allowWriteActions ? "warning" : "disabled")}</div></div>
     <div class="form-grid">
       ${field("Repository path", "repoPath", input.repoPath, "text")}
