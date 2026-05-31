@@ -1,0 +1,307 @@
+{
+  "id": "repovista",
+  "name": "RepoVista",
+  "version": "0.1.0",
+  "description": "Run RepoVista scans, track live scan status, and browse generated reports from NordRelay.",
+  "author": "Ricardo <github@nordbyte.de>",
+  "homepage": "https://github.com/nordbyte/nordrelay-plugin-repovista",
+  "repository": "https://github.com/nordbyte/nordrelay-plugin-repovista",
+  "license": "MIT",
+  "nordrelay": ">=0.9.14",
+  "entry": "index.js",
+  "permissions": [
+    "runtime.read",
+    "peers.read",
+    "files.read",
+    "files.write",
+    "network"
+  ],
+  "capabilities": {
+    "commands": [
+      {
+        "name": "panel-data",
+        "title": "Panel data",
+        "description": "Return RepoVista version, known report runs, recent status files, and configured defaults.",
+        "timeoutMs": 30000
+      },
+      {
+        "name": "scan",
+        "title": "Run scan",
+        "description": "Run a RepoVista audit in the selected repository.",
+        "permission": "files.write",
+        "timeoutMs": 7200000
+      },
+      {
+        "name": "plan",
+        "title": "Plan scan",
+        "description": "Run RepoVista plan for the selected repository and options.",
+        "timeoutMs": 120000
+      },
+      {
+        "name": "doctor",
+        "title": "Doctor",
+        "description": "Run RepoVista doctor.",
+        "timeoutMs": 120000
+      },
+      {
+        "name": "providers",
+        "title": "Providers",
+        "description": "List or test RepoVista providers.",
+        "timeoutMs": 120000
+      },
+      {
+        "name": "profiles",
+        "title": "Profiles",
+        "description": "List RepoVista built-in audit profiles.",
+        "timeoutMs": 30000
+      },
+      {
+        "name": "list-reports",
+        "title": "List reports",
+        "description": "List generated RepoVista report runs.",
+        "timeoutMs": 30000
+      },
+      {
+        "name": "report-detail",
+        "title": "Report detail",
+        "description": "Read one RepoVista report run and its sections.",
+        "timeoutMs": 30000
+      },
+      {
+        "name": "report-artifact",
+        "title": "Report artifact",
+        "description": "Read one generated report artifact.",
+        "timeoutMs": 30000
+      },
+      {
+        "name": "compare",
+        "title": "Compare reports",
+        "description": "Compare two RepoVista report run directories.",
+        "timeoutMs": 120000
+      },
+      {
+        "name": "review",
+        "title": "Review report",
+        "description": "Review one RepoVista report run for quality and evidence health.",
+        "timeoutMs": 120000
+      },
+      {
+        "name": "repair-run",
+        "title": "Repair run",
+        "description": "Rebuild run artifacts from provider-native structured outputs.",
+        "permission": "files.write",
+        "timeoutMs": 120000
+      },
+      {
+        "name": "pr-comment",
+        "title": "PR comment",
+        "description": "Render a RepoVista pull request summary comment.",
+        "timeoutMs": 120000
+      },
+      {
+        "name": "findings",
+        "title": "Findings",
+        "description": "List RepoVista findings for a run.",
+        "timeoutMs": 30000
+      },
+      {
+        "name": "next",
+        "title": "Next finding",
+        "description": "Show the next prioritized persisted finding.",
+        "timeoutMs": 30000
+      },
+      {
+        "name": "show",
+        "title": "Show finding",
+        "description": "Show one persisted finding with evidence.",
+        "timeoutMs": 30000
+      },
+      {
+        "name": "revalidate",
+        "title": "Revalidate finding",
+        "description": "Re-check finding evidence against the current checkout.",
+        "timeoutMs": 120000
+      },
+      {
+        "name": "triage",
+        "title": "Triage finding",
+        "description": "Update a persisted finding status when write actions are enabled.",
+        "permission": "files.write",
+        "timeoutMs": 30000
+      },
+      {
+        "name": "issue",
+        "title": "Create issue",
+        "description": "Create or update GitHub issues for RepoVista findings when publishing is enabled.",
+        "permission": "files.write",
+        "timeoutMs": 120000
+      },
+      {
+        "name": "github-status",
+        "title": "GitHub status",
+        "description": "Refresh linked GitHub issue and pull request status for findings.",
+        "timeoutMs": 120000
+      },
+      {
+        "name": "publish",
+        "title": "Publish finding",
+        "description": "Publish selected findings as GitHub issues or pull requests when publishing is enabled.",
+        "permission": "files.write",
+        "timeoutMs": 1800000
+      },
+      {
+        "name": "baseline",
+        "title": "Baseline",
+        "description": "Manage RepoVista baseline suppressions when write actions are enabled.",
+        "permission": "files.write",
+        "timeoutMs": 30000
+      },
+      {
+        "name": "fix",
+        "title": "Fix finding",
+        "description": "Run RepoVista fix in dry-run or write mode when write actions are enabled.",
+        "permission": "files.write",
+        "timeoutMs": 1800000
+      },
+      {
+        "name": "patches",
+        "title": "Patches",
+        "description": "List or preview RepoVista patch attempts.",
+        "timeoutMs": 30000
+      },
+      {
+        "name": "rollback",
+        "title": "Rollback patch",
+        "description": "Reverse a recorded RepoVista patch diff when write actions are enabled.",
+        "permission": "files.write",
+        "timeoutMs": 120000
+      },
+      {
+        "name": "open-pr",
+        "title": "Open PR",
+        "description": "Create a pull request for a completed patch attempt when publishing is enabled.",
+        "permission": "files.write",
+        "timeoutMs": 120000
+      },
+      {
+        "name": "ci-init",
+        "title": "CI init",
+        "description": "Create a GitHub Actions workflow for RepoVista when write actions are enabled.",
+        "permission": "files.write",
+        "timeoutMs": 30000
+      },
+      {
+        "name": "clean-locks",
+        "title": "Clean locks",
+        "description": "Remove stale RepoVista feature locks when write actions are enabled.",
+        "permission": "files.write",
+        "timeoutMs": 30000
+      },
+      {
+        "name": "settings",
+        "title": "Settings",
+        "description": "Read, set, or reset persisted RepoVista settings.",
+        "permission": "files.write",
+        "timeoutMs": 30000
+      }
+    ],
+    "webPanels": [
+      {
+        "id": "dashboard",
+        "title": "RepoVista",
+        "description": "Run scans and browse RepoVista reports.",
+        "aggregateCommand": "panel-data",
+        "allowClientScript": true,
+        "placement": "plugins",
+        "timeoutMs": 30000
+      }
+    ],
+    "diagnostics": true
+  },
+  "settings": [
+    {
+      "key": "repovistaCommand",
+      "label": "RepoVista command",
+      "type": "string",
+      "description": "Command or absolute path used to run RepoVista. Defaults to repovista from PATH.",
+      "default": "repovista"
+    },
+    {
+      "key": "allowedRepoRoots",
+      "label": "Allowed repository roots",
+      "type": "string",
+      "description": "Comma or newline separated root paths. Empty allows all paths on the node.",
+      "default": ""
+    },
+    {
+      "key": "defaultRepoPath",
+      "label": "Default repository path",
+      "type": "string",
+      "description": "Default local repository path shown in the panel.",
+      "default": ""
+    },
+    {
+      "key": "defaultOutDir",
+      "label": "Default output directory",
+      "type": "string",
+      "description": "RepoVista report output directory relative to the repository.",
+      "default": ".repovista"
+    },
+    {
+      "key": "defaultProvider",
+      "label": "Default provider",
+      "type": "select",
+      "description": "Default RepoVista provider.",
+      "default": "codex",
+      "options": [
+        { "label": "Codex", "value": "codex" },
+        { "label": "Claude", "value": "claude" },
+        { "label": "Gemini", "value": "gemini" },
+        { "label": "OpenCode", "value": "opencode" },
+        { "label": "Aider", "value": "aider" }
+      ]
+    },
+    {
+      "key": "defaultReasoning",
+      "label": "Default reasoning",
+      "type": "string",
+      "description": "Default provider reasoning effort.",
+      "default": "xhigh"
+    },
+    {
+      "key": "allowGithubSource",
+      "label": "Allow GitHub source scans",
+      "type": "boolean",
+      "description": "Allow scans using --github-repo and --github-ref.",
+      "default": true
+    },
+    {
+      "key": "allowWriteActions",
+      "label": "Allow write actions",
+      "type": "boolean",
+      "description": "Allow triage, baseline, fix, rollback, settings writes, and non-dry-run patch actions.",
+      "default": false
+    },
+    {
+      "key": "allowGithubPublish",
+      "label": "Allow GitHub publishing",
+      "type": "boolean",
+      "description": "Allow GitHub issue, PR, and publish commands when RepoVista and gh are configured.",
+      "default": false
+    },
+    {
+      "key": "commandTimeoutMs",
+      "label": "Command timeout",
+      "type": "number",
+      "description": "Timeout for short RepoVista commands.",
+      "default": 120000
+    },
+    {
+      "key": "scanTimeoutMs",
+      "label": "Scan timeout",
+      "type": "number",
+      "description": "Timeout for long-running RepoVista scans.",
+      "default": 7200000
+    }
+  ]
+}
