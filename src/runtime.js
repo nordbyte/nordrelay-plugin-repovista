@@ -28,10 +28,11 @@ export async function runRepoVistaPlugin() {
 }
 
 export async function handleCommand(command, input = {}, settings = {}, request = {}) {
-  if (command === "panel-data") return panelData(input, settings);
-  if (command === "list-reports") return listReportsCommand(input, settings);
-  if (command === "report-detail") return reportDetailCommand(input, settings);
-  if (command === "report-artifact") return reportArtifactCommand(input, settings);
+  const dataDir = request.dataDir || process.cwd();
+  if (command === "panel-data") return panelData(input, settings, dataDir);
+  if (command === "list-reports") return listReportsCommand(input, settings, dataDir);
+  if (command === "report-detail") return reportDetailCommand(input, settings, dataDir);
+  if (command === "report-artifact") return reportArtifactCommand(input, settings, dataDir);
   if (command === "scan") request.host?.requirePermission?.("files.write");
   if (requiresWrite(command, input, settings)) {
     request.host?.requirePermission?.("files.write");
@@ -42,12 +43,12 @@ export async function handleCommand(command, input = {}, settings = {}, request 
   if (requiresGithubPublish(command) && !settings.allowGithubPublish) {
     return fail("RepoVista GitHub publishing is disabled in plugin settings.");
   }
-  return runRepoVistaCommand(command, input, settings);
+  return runRepoVistaCommand(command, input, settings, dataDir);
 }
 
-async function panelData(input, settings) {
+async function panelData(input, settings, dataDir) {
   const version = await commandAvailable(settings.repovistaCommand);
-  if (!input.repoPath && !settings.defaultRepoPath) {
+  if (!input.repoPath && !settings.defaultRepoPath && !input.githubRepo) {
     return ok({
       version,
       configured: Boolean(version),
@@ -58,7 +59,7 @@ async function panelData(input, settings) {
       note: "Set a repository path to load reports."
     });
   }
-  const repoPath = await resolveRepoPath(input, settings);
+  const repoPath = await resolveReportRoot(input, settings, dataDir);
   const outDir = String(input.outDir || settings.defaultOutDir || ".repovista");
   const [reports, status] = await Promise.all([
     listReports(repoPath, outDir, { limit: 50 }),
@@ -75,26 +76,26 @@ async function panelData(input, settings) {
   });
 }
 
-async function listReportsCommand(input, settings) {
-  const repoPath = await resolveRepoPath(input, settings);
+async function listReportsCommand(input, settings, dataDir) {
+  const repoPath = await resolveReportRoot(input, settings, dataDir);
   const reports = await listReports(repoPath, String(input.outDir || settings.defaultOutDir || ".repovista"), { limit: Number(input.limit) || 100 });
   return ok({ repoPath, reports });
 }
 
-async function reportDetailCommand(input, settings) {
-  const repoPath = await resolveRepoPath(input, settings);
+async function reportDetailCommand(input, settings, dataDir) {
+  const repoPath = await resolveReportRoot(input, settings, dataDir);
   const detail = await readReportDetail(repoPath, String(input.outDir || settings.defaultOutDir || ".repovista"), input.runId || input.runDir);
   return ok({ detail, text: renderReportText(detail) });
 }
 
-async function reportArtifactCommand(input, settings) {
-  const repoPath = await resolveRepoPath(input, settings);
+async function reportArtifactCommand(input, settings, dataDir) {
+  const repoPath = await resolveReportRoot(input, settings, dataDir);
   const artifact = await readReportArtifact(repoPath, String(input.outDir || settings.defaultOutDir || ".repovista"), input.runId || input.runDir, input.fileName);
   return ok(artifact);
 }
 
-async function runRepoVistaCommand(command, input, settings) {
-  const repoPath = await resolveRepoPath(input, settings);
+async function runRepoVistaCommand(command, input, settings, dataDir) {
+  const repoPath = await resolveExecutionCwd(input, settings, dataDir);
   const args = buildCommandArgs(command, input, settings);
   const timeoutMs = command === "scan" ? settings.scanTimeoutMs : settings.commandTimeoutMs;
   const result = await runRepoVista(settings.repovistaCommand, args, { cwd: repoPath, timeoutMs });
@@ -108,6 +109,25 @@ async function runRepoVistaCommand(command, input, settings) {
     stderr: result.stderr
   };
   return result.ok ? ok(output, { stdout: result.stdout, stderr: result.stderr }) : fail(result.stderr || result.stdout || `RepoVista exited with ${result.exitCode}`, { output, stdout: result.stdout, stderr: result.stderr });
+}
+
+async function resolveExecutionCwd(input, settings, dataDir) {
+  if (String(input.githubRepo || "").trim()) {
+    if (!settings.allowGithubSource) {
+      throw new Error("GitHub source scans are disabled for this plugin.");
+    }
+    await mkdir(dataDir, { recursive: true });
+    return dataDir;
+  }
+  return resolveRepoPath(input, settings);
+}
+
+async function resolveReportRoot(input, settings, dataDir) {
+  if (String(input.githubRepo || "").trim()) {
+    await mkdir(dataDir, { recursive: true });
+    return dataDir;
+  }
+  return resolveRepoPath(input, settings);
 }
 
 async function diagnostics(settings, dataDir) {

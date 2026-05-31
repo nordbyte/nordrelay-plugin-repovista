@@ -1,10 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { buildAuditArgs, normalizeSettings, resolveRepoPath } from "../src/repovista.js";
 import { renderPanel } from "../src/render-panel.js";
+import { handleCommand } from "../src/runtime.js";
 import { listReports, readReportDetail } from "../src/reports.js";
 
 test("buildAuditArgs maps scan options to RepoVista CLI flags", () => {
@@ -29,11 +30,29 @@ test("buildAuditArgs maps scan options to RepoVista CLI flags", () => {
   assert.equal(args.filter((item) => item === "--include").length, 2);
 });
 
+test("buildAuditArgs maps GitHub source scan options", () => {
+  const args = buildAuditArgs({
+    githubRepo: "nordbyte/RepoVista",
+    githubRef: "main",
+    provider: "codex"
+  }, normalizeSettings({ allowGithubSource: true }));
+
+  assert.deepEqual(args.slice(0, 2), ["audit", "--no-progress"]);
+  assert.equal(args.includes("--github-repo"), true);
+  assert.equal(args.includes("nordbyte/RepoVista"), true);
+  assert.equal(args.includes("--github-ref"), true);
+  assert.equal(args.includes("main"), true);
+});
+
 test("scan panel uses shared comparison header spacing classes", () => {
   const html = renderPanel({}, { runtime: { name: "Local node", workspace: "/repo" } }, {});
 
   assert.match(html, /class="stack monitor-comparison-panel repovista-scan-panel"/);
   assert.match(html, /<h2>Start Scan<\/h2>/);
+  assert.match(html, /<summary>Advanced options<\/summary>/);
+  assert.match(html, /<select name="phases" multiple size="4">/);
+  assert.match(html, /<select name="exportFormats" multiple size="4">/);
+  assert.match(html, /GitHub repo/);
 });
 
 test("resolveRepoPath respects allowed roots", async () => {
@@ -44,6 +63,38 @@ test("resolveRepoPath respects allowed roots", async () => {
     const settings = normalizeSettings({ allowedRepoRoots: root });
     assert.equal(await resolveRepoPath({ repoPath: repo }, settings), repo);
     await assert.rejects(resolveRepoPath({ repoPath: os.tmpdir() }, settings), /outside the configured allowed roots/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("GitHub scan runs from plugin data dir without a local repository path", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "repovista-plugin-github-"));
+  const command = path.join(root, "repovista-mock.mjs");
+  const dataDir = path.join(root, "data");
+  try {
+    await mkdir(dataDir, { recursive: true });
+    await writeFile(command, "#!/usr/bin/env node\nconsole.log(JSON.stringify({ cwd: process.cwd(), argv: process.argv.slice(2) }));\n", "utf8");
+    await chmod(command, 0o755);
+    const result = await handleCommand("scan", {
+      githubRepo: "nordbyte/RepoVista",
+      githubRef: "main",
+      outDir: ".repovista-github"
+    }, normalizeSettings({
+      repovistaCommand: command,
+      allowGithubSource: true
+    }), {
+      dataDir,
+      host: { requirePermission() {} }
+    });
+
+    assert.equal(result.ok, true);
+    const payload = JSON.parse(result.output.stdout.trim());
+    assert.equal(payload.cwd, dataDir);
+    assert.equal(payload.argv.includes("--github-repo"), true);
+    assert.equal(payload.argv.includes("nordbyte/RepoVista"), true);
+    assert.equal(payload.argv.includes("--github-ref"), true);
+    assert.equal(payload.argv.includes("main"), true);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

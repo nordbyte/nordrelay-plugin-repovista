@@ -91,40 +91,45 @@ function renderScanForm(input, settings) {
   return `<div class="stack monitor-comparison-panel repovista-scan-panel">
     <div class="section-header"><h2>Start Scan</h2><div class="row">${badge("write actions " + (settings.allowWriteActions ? "enabled" : "disabled"), settings.allowWriteActions ? "warning" : "disabled")}</div></div>
     <div class="form-grid">
-      ${field("Repository path", "repoPath", input.repoPath, "text")}
-      ${field("Output dir", "outDir", input.outDir, "text")}
-      ${selectField("Provider", "provider", PROVIDERS, input.provider)}
-      ${field("Model", "model", input.model || "", "text")}
-      ${field("Profile", "profile", input.profile || "", "text")}
-      ${field("Reasoning", "reasoning", input.reasoning, "text")}
-      ${selectField("Sandbox", "sandbox", ["read-only", "workspace-write"], input.sandbox || "read-only")}
-      ${selectField("Parallel", "parallel", ["auto", "off", "1", "2", "3", "4", "5"], input.parallel || "auto")}
-      ${selectField("Audit profile", "auditProfile", AUDIT_PROFILES, input.auditProfile || "")}
-      ${selectField("Review mode", "reviewMode", REVIEW_MODES, input.reviewMode || "default")}
-      ${field("Language", "language", input.language || "English", "text")}
+      ${field("Local repository path", "repoPath", input.repoPath, "text")}
       ${field("GitHub repo", "githubRepo", input.githubRepo || "", "text")}
       ${field("GitHub ref", "githubRef", input.githubRef || "", "text")}
-      ${field("Since", "since", input.since || "", "text")}
-      ${field("Base ref", "baseRef", input.baseRef || "", "text")}
-      ${field("Workspace", "workspace", input.workspace || "", "text")}
-      ${field("Includes", "includes", listValue(input.includes), "text")}
-      ${field("Ignores", "ignores", listValue(input.ignores), "text")}
+      ${selectField("Provider", "provider", PROVIDERS, input.provider)}
+      ${field("Model", "model", input.model || "", "text")}
+      ${field("Reasoning", "reasoning", input.reasoning, "text")}
+      ${selectField("Sandbox", "sandbox", ["read-only", "workspace-write"], input.sandbox || "read-only")}
       ${multiSelectField("Phases", "phases", PHASES, input.phases)}
       ${multiSelectField("Exports", "exportFormats", EXPORTS, input.exportFormats || ["sarif", "html", "jsonl"])}
-      ${field("Check commands", "checkCommands", listValue(input.checkCommands), "text")}
+      ${field("Output dir", "outDir", input.outDir, "text")}
     </div>
-    <div class="row">
-      ${checkbox("Run checks", "runChecks", input.runChecks !== false)}
-      ${checkbox("Strict reports", "strictReports", input.strictReports !== false)}
-      ${checkbox("Repair reports", "repairReports", input.repairReports !== false)}
-      ${checkbox("Deep review", "deepReview", input.deepReview === true)}
-      ${checkbox("Snapshot", "snapshot", input.snapshot === true)}
-      ${checkbox("Fast", "fastMode", input.fastMode === true)}
-      ${checkbox("Keep logs", "keepLogs", input.keepLogs === true)}
-      ${checkbox("JSON", "json", input.json === true)}
-      ${checkbox("Fail on drift", "failOnDrift", input.failOnDrift === true)}
-      ${checkbox("Fail on weak evidence", "failOnWeakEvidence", input.failOnWeakEvidence === true)}
-    </div>
+    <details class="plugin-advanced-options"${advancedScanOptionsOpen(input) ? " open" : ""}>
+      <summary>Advanced options</summary>
+      <div class="form-grid">
+        ${field("Profile", "profile", input.profile || "", "text")}
+        ${selectField("Parallel", "parallel", ["auto", "off", "1", "2", "3", "4", "5"], input.parallel || "auto")}
+        ${selectField("Audit profile", "auditProfile", AUDIT_PROFILES, input.auditProfile || "")}
+        ${selectField("Review mode", "reviewMode", REVIEW_MODES, input.reviewMode || "default")}
+        ${field("Language", "language", input.language || "English", "text")}
+        ${field("Since", "since", input.since || "", "text")}
+        ${field("Base ref", "baseRef", input.baseRef || "", "text")}
+        ${field("Workspace", "workspace", input.workspace || "", "text")}
+        ${field("Includes", "includes", listValue(input.includes), "text")}
+        ${field("Ignores", "ignores", listValue(input.ignores), "text")}
+        ${field("Check commands", "checkCommands", listValue(input.checkCommands), "text")}
+      </div>
+      <div class="row">
+        ${checkbox("Run checks", "runChecks", input.runChecks !== false)}
+        ${checkbox("Strict reports", "strictReports", input.strictReports !== false)}
+        ${checkbox("Repair reports", "repairReports", input.repairReports !== false)}
+        ${checkbox("Deep review", "deepReview", input.deepReview === true)}
+        ${checkbox("Snapshot", "snapshot", input.snapshot === true)}
+        ${checkbox("Fast", "fastMode", input.fastMode === true)}
+        ${checkbox("Keep logs", "keepLogs", input.keepLogs === true)}
+        ${checkbox("JSON", "json", input.json === true)}
+        ${checkbox("Fail on drift", "failOnDrift", input.failOnDrift === true)}
+        ${checkbox("Fail on weak evidence", "failOnWeakEvidence", input.failOnWeakEvidence === true)}
+      </div>
+    </details>
     <div class="toolbar">
       <button type="button" data-scan-start>Start scan</button>
       <button type="button" class="secondary" data-command="plan">Plan</button>
@@ -133,6 +138,10 @@ function renderScanForm(input, settings) {
       <button type="button" class="secondary" data-command="profiles">Profiles</button>
     </div>
   </div>`;
+}
+
+function advancedScanOptionsOpen(input) {
+  return Boolean(input.profile || input.parallel || input.auditProfile || input.reviewMode || input.language || input.since || input.baseRef || input.workspace || listValue(input.includes) || listValue(input.ignores) || listValue(input.checkCommands) || input.deepReview === true || input.snapshot === true || input.fastMode === true || input.keepLogs === true || input.json === true || input.failOnDrift === true || input.failOnWeakEvidence === true || input.runChecks === false || input.strictReports === false || input.repairReports === false);
 }
 
 function renderJobs(nodes) {
