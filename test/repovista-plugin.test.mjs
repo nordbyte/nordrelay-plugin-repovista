@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { buildAuditArgs, normalizeSettings, resolveRepoPath } from "../src/repovista.js";
@@ -90,7 +90,7 @@ test("GitHub scan runs from plugin data dir without a local repository path", as
 
     assert.equal(result.ok, true);
     const payload = JSON.parse(result.output.stdout.trim());
-    assert.equal(payload.cwd, dataDir);
+    assert.equal(payload.cwd, await realpath(dataDir));
     assert.equal(payload.argv.includes("--github-repo"), true);
     assert.equal(payload.argv.includes("nordbyte/RepoVista"), true);
     assert.equal(payload.argv.includes("--github-ref"), true);

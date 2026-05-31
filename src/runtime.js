@@ -1,4 +1,4 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, realpath } from "node:fs/promises";
 import { runPlugin, ok, fail } from "@nordbyte/nordrelay-plugin-sdk";
 import { renderPanel, panelScript } from "./render-panel.js";
 import { buildCommandArgs, commandAvailable, normalizeSettings, resolveRepoPath, runRepoVista } from "./repovista.js";
@@ -117,7 +117,7 @@ async function resolveExecutionCwd(input, settings, dataDir) {
       throw new Error("GitHub source scans are disabled for this plugin.");
     }
     await mkdir(dataDir, { recursive: true });
-    return dataDir;
+    return realpath(dataDir);
   }
   return resolveRepoPath(input, settings);
 }
@@ -125,7 +125,7 @@ async function resolveExecutionCwd(input, settings, dataDir) {
 async function resolveReportRoot(input, settings, dataDir) {
   if (String(input.githubRepo || "").trim()) {
     await mkdir(dataDir, { recursive: true });
-    return dataDir;
+    return realpath(dataDir);
   }
   return resolveRepoPath(input, settings);
 }

@@ -246,9 +246,9 @@ export function buildCommandArgs(command, input = {}, settings = {}) {
 export async function runRepoVista(command, args, options = {}) {
   const timeoutMs = positiveNumber(options.timeoutMs, 120000);
   const cwd = options.cwd || process.cwd();
-  const executable = String(command || "repovista");
+  const executable = resolveRepoVistaExecutable(String(command || "repovista"), args);
   return new Promise((resolve) => {
-    const child = spawn(executable, args, {
+    const child = spawn(executable.command, executable.args, {
       cwd,
       env: { ...process.env, ...(options.env || {}) },
       windowsHide: true
@@ -281,6 +281,14 @@ export async function runRepoVista(command, args, options = {}) {
       resolve({ ok: exitCode === 0, exitCode, signal, stdout, stderr });
     });
   });
+}
+
+function resolveRepoVistaExecutable(command, args) {
+  const extension = path.extname(command).toLowerCase();
+  if (extension === ".js" || extension === ".mjs" || extension === ".cjs") {
+    return { command: process.execPath, args: [command, ...args] };
+  }
+  return { command, args };
 }
 
 export async function commandAvailable(command) {
